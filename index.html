@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <input type="text" name="satır 01" maxlength="170" size ="170" id ="01"/>
+  <input type="text" name="satır 02" maxlength="170" size ="170" id ="02"/>
+  <input type="text" name="satır 03" maxlength="170" size ="170" id ="03"/>
+  <input type="text" name="satır 04" maxlength="170" size ="170" id ="04"/>
+  <input type="text" name="satır 05" maxlength="170" size ="170" id ="05"/>
+  <input type="text" name="satır 06" maxlength="170" size ="170" id ="06"/>
+  <input type="text" name="satır 07" maxlength="170" size ="170" id ="07"/>
+  <input type="text" name="satır 08" maxlength="170" size ="170" id ="08"/>
+  <input type="text" name="satır 09" maxlength="170" size ="170" id ="09"/>
+  <input type="text" name="satır 10" maxlength="170" size ="170" id ="10"/>
+  <input type="text" name="satır 11" maxlength="170" size ="170" id ="11"/>
+  <input type="text" name="satır 12" maxlength="170" size ="170" id ="12"/>
+  <input type="text" name="satır 13" maxlength="170" size ="170" id ="13"/>
+  <input type="text" name="satır 14" maxlength="170" size ="170" id ="14"/>
+  <input type="text" name="satır 15" maxlength="170" size ="170" id ="15"/>
+  <input type="text" name="satır 16" maxlength="170" size ="170" id ="16"/>
+  <input type="text" name="satır 17" maxlength="170" size ="170" id ="17"/>
+  <input type="text" name="satır 18" maxlength="170" size ="170" id ="18"/>
+  <input type="text" name="satır 19" maxlength="170" size ="170" id ="19"/>
+  <input type="text" name="satır 20" maxlength="170" size ="170" id ="20"/>
+  <input type="text" name="satır 21" maxlength="170" size ="170" id ="21"/>
+  <input type="text" name="satır 22" maxlength="170" size ="170" id ="22"/>
+  <input type="text" name="satır 23" maxlength="170" size ="170" id ="23"/>
+  <input type="text" name="satır 24" maxlength="170" size ="170" id ="24"/>
+  <input type="text" name="satır 25" maxlength="170" size ="170" id ="25"/>
+
+  <div class="overlay" id="overlay">
+    <h2 id="gerisayim"></h2>
+  </div>
+
+  <h1>  You can add a character to any of the sentences every minute (25 Sentences, 170 Characters per) // Dakikada bir istedğin satıra bir karakter ekleyebilirsin (25 Satır, Her Satırda 170 Karakter!) </h1>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<script>
+  // Firebase config (replace with your own project values if needed)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBEuaqy2UQ2LjPjqgTLCGkCkXnhi1Vbb_KU",
+    authDomain: "global-input.firebaseapp.com",
+    databaseURL: "https://global-input-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "global-input",
+    storageBucket: "global-input.appspot.com",
+    messagingSenderId: "886825216345",
+    appId: "1:886825216345:web:57f674c5e7696d10fa2a48",
+    measurementId: "G-XETVYVQSEV"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  const inputs = document.querySelectorAll("input");
+  const overlay = document.getElementById('overlay');
+  const countdown = document.getElementById('gerisayim');
+  let timer = null;
+
+  // --- Load shared data from Firebase ---
+  db.ref('sharedInputs').once('value').then(snapshot => {
+    const data = snapshot.val();
+    inputs.forEach((input, index) => {
+      const local = localStorage.getItem(`input-${index}`);
+      const shared = data?.[`input-${index}`];
+
+      if (shared !== undefined) input.value = shared;
+      else if (local !== null) input.value = local;
+    });
+  });
+
+  // --- Restore cooldown from localStorage ---
+  const cooldownEnd = localStorage.getItem('cooldownEnd');
+  if (cooldownEnd) {
+    const now = Date.now();
+    const timeLeft = Math.floor((cooldownEnd - now) / 1000);
+    if (timeLeft > 0) {
+      startCooldown(timeLeft);
+    } else {
+      localStorage.removeItem('cooldownEnd');
+    }
+  }
+
+  // --- Cooldown handler ---
+  function startCooldown(timeLeft = 60) {
+    inputs.forEach(input => input.disabled = true);
+    overlay.style.display = 'flex';
+    countdown.textContent = `${timeLeft}`;
+
+    const endTime = Date.now() + timeLeft * 1000;
+    localStorage.setItem('cooldownEnd', endTime);
+
+    timer = setInterval(() => {
+      const now = Date.now();
+      const remaining = Math.floor((endTime - now) / 1000);
+
+      if (remaining > 0) {
+        countdown.textContent = `${remaining}`;
+      } else {
+        clearInterval(timer);
+        inputs.forEach(input => input.disabled = false);
+        overlay.style.display = 'none';
+        localStorage.removeItem('cooldownEnd');
+      }
+    }, 1000);
+  }
+
+  // --- Input event handler ---
+  inputs.forEach((input, index) => {
+    input.addEventListener('input', () => {
+      const key = `input-${index}`;
+      const val = input.value;
+
+      // Save locally
+      localStorage.setItem(key, val);
+
+      // Save to Firebase (global)
+      db.ref(`sharedInputs/${key}`).set(val);
+
+      // Start cooldown
+      startCooldown();
+    });
+  });
+</script>
+
+
+</body>
+
+</html>
