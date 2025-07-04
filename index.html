@@ -37,12 +37,10 @@
 
   <h1>  You can add a character to any of the sentences every minute (25 Sentences, 170 Characters per) // Dakikada bir istedğin satıra bir karakter ekleyebilirsin (25 Satır, Her Satırda 170 Karakter!) </h1>
 
-<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <script>
-  // Firebase config (replace with your own project values if needed)
   const firebaseConfig = {
     apiKey: "AIzaSyBEuaqy2UQ2LjPjqgTLCGkCkXnhi1Vbb_KU",
     authDomain: "global-input.firebaseapp.com",
@@ -54,7 +52,6 @@
     measurementId: "G-XETVYVQSEV"
   };
 
-  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
@@ -63,7 +60,6 @@
   const countdown = document.getElementById('gerisayim');
   let timer = null;
 
-  // --- Load shared data from Firebase ---
   db.ref('sharedInputs').once('value').then(snapshot => {
     const data = snapshot.val();
     inputs.forEach((input, index) => {
@@ -75,7 +71,6 @@
     });
   });
 
-  // --- Restore cooldown from localStorage ---
   const cooldownEnd = localStorage.getItem('cooldownEnd');
   if (cooldownEnd) {
     const now = Date.now();
@@ -87,7 +82,6 @@
     }
   }
 
-  // --- Cooldown handler ---
   function startCooldown(timeLeft = 60) {
     inputs.forEach(input => input.disabled = true);
     overlay.style.display = 'flex';
@@ -111,19 +105,15 @@
     }, 1000);
   }
 
-  // --- Input event handler ---
   inputs.forEach((input, index) => {
     input.addEventListener('input', () => {
       const key = `input-${index}`;
       const val = input.value;
 
-      // Save locally
       localStorage.setItem(key, val);
 
-      // Save to Firebase (global)
       db.ref(`sharedInputs/${key}`).set(val);
 
-      // Start cooldown
       startCooldown();
     });
   });
