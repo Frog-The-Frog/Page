@@ -35,91 +35,111 @@
     <h2 id="gerisayim"></h2>
   </div>
 
-  <h1>  You can add a character to any of the sentences every minute (25 Sentences, 170 Characters per) // Dakikada bir istedğin satıra bir karakter ekleyebilirsin (25 Satır, Her Satırda 170 Karakter!) </h1>
+  <h1>You can add a character to any of the sentences every minute (25 Sentences, 170 Characters per) // Dakikada bir istediğin satıra bir karakter ekleyebilirsin (25 Satır, Her Satırda 170 Karakter!)</h1>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBEuaqy2UQ2LjPjqgTLCGkCkXnhi1Vbb_KU",
-    authDomain: "global-input.firebaseapp.com",
-    databaseURL: "https://global-input-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "global-input",
-    storageBucket: "global-input.appspot.com",
-    messagingSenderId: "886825216345",
-    appId: "1:886825216345:web:57f674c5e7696d10fa2a48",
-    measurementId: "G-XETVYVQSEV"
-  };
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBEuaqy2UQ2LjPjqgTLCGkCkXnhi1Vbb_KU",
+      authDomain: "global-input.firebaseapp.com",
+      databaseURL: "https://global-input-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "global-input",
+      storageBucket: "global-input.appspot.com",
+      messagingSenderId: "886825216345",
+      appId: "1:886825216345:web:57f674c5e7696d10fa2a48",
+      measurementId: "G-XETVYVQSEV"
+    };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-  const inputs = document.querySelectorAll("input");
-  const overlay = document.getElementById('overlay');
-  const countdown = document.getElementById('gerisayim');
-  let timer = null;
+    const inputs = document.querySelectorAll("input");
+    const overlay = document.getElementById('overlay');
+    const countdown = document.getElementById('gerisayim');
+    let timer = null;
 
-  db.ref('sharedInputs').once('value').then(snapshot => {
-    const data = snapshot.val();
-    inputs.forEach((input, index) => {
-      const local = localStorage.getItem(`input-${index}`);
-      const shared = data?.[`input-${index}`];
+    db.ref('sharedInputs').once('value').then(snapshot => {
+      const data = snapshot.val();
+      inputs.forEach((input, index) => {
+        const local = localStorage.getItem(`input-${index}`);
+        const shared = data?.[`input-${index}`];
 
-      if (shared !== undefined) input.value = shared;
-      else if (local !== null) input.value = local;
+        if (shared !== undefined) input.value = shared;
+        else if (local !== null) input.value = local;
+      });
     });
-  });
 
-  const cooldownEnd = localStorage.getItem('cooldownEnd');
-  if (cooldownEnd) {
-    const now = Date.now();
-    const timeLeft = Math.floor((cooldownEnd - now) / 1000);
-    if (timeLeft > 0) {
-      startCooldown(timeLeft);
-    } else {
-      localStorage.removeItem('cooldownEnd');
-    }
-  }
-
-  function startCooldown(timeLeft = 60) {
-    inputs.forEach(input => input.disabled = true);
-    overlay.style.display = 'flex';
-    countdown.textContent = `${timeLeft}`;
-
-    const endTime = Date.now() + timeLeft * 1000;
-    localStorage.setItem('cooldownEnd', endTime);
-
-    timer = setInterval(() => {
+    const cooldownEnd = localStorage.getItem('cooldownEnd');
+    if (cooldownEnd) {
       const now = Date.now();
-      const remaining = Math.floor((endTime - now) / 1000);
-
-      if (remaining > 0) {
-        countdown.textContent = `${remaining}`;
+      const timeLeft = Math.floor((cooldownEnd - now) / 1000);
+      if (timeLeft > 0) {
+        startCooldown(timeLeft);
       } else {
-        clearInterval(timer);
-        inputs.forEach(input => input.disabled = false);
-        overlay.style.display = 'none';
         localStorage.removeItem('cooldownEnd');
       }
-    }, 1000);
-  }
+    }
 
-  inputs.forEach((input, index) => {
-    input.addEventListener('input', () => {
-      const key = `input-${index}`;
-      const val = input.value;
+    function startCooldown(timeLeft = 60) {
+      inputs.forEach(input => input.disabled = true);
+      overlay.style.display = 'flex';
+      countdown.textContent = `${timeLeft}`;
 
-      localStorage.setItem(key, val);
+      const endTime = Date.now() + timeLeft * 1000;
+      localStorage.setItem('cooldownEnd', endTime);
 
-      db.ref(`sharedInputs/${key}`).set(val);
+      timer = setInterval(() => {
+        const now = Date.now();
+        const remaining = Math.floor((endTime - now) / 1000);
 
-      startCooldown();
+        if (remaining > 0) {
+          countdown.textContent = `${remaining}`;
+        } else {
+          clearInterval(timer);
+          inputs.forEach(input => input.disabled = false);
+          overlay.style.display = 'none';
+          localStorage.removeItem('cooldownEnd');
+        }
+      }, 1000);
+    }
+
+    inputs.forEach((input, index) => {
+      input.addEventListener('input', () => {
+        const key = `input-${index}`;
+        const val = input.value;
+
+        localStorage.setItem(key, val);
+        db.ref(`sharedInputs/${key}`).set(val);
+
+        startCooldown();
+      });
+
+      ['copy', 'cut', 'paste'].forEach(evt => {
+        input.addEventListener(evt, e => e.preventDefault());
+      });
+
+      input.addEventListener('keydown', e => {
+        const allSelected = input.selectionStart === 0 && input.selectionEnd === input.value.length;
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Backspace') {
+          e.preventDefault();
+        }
+        if (e.key === 'Backspace' && allSelected) {
+          e.preventDefault();
+        }
+      });
+
+      input.addEventListener('mousedown', e => {
+        if (e.detail > 1) {
+          e.preventDefault();
+        }
+      });
     });
-  });
-</script>
 
+    document.addEventListener('selectstart', e => e.preventDefault());
+  </script>
 
 </body>
-
 </html>
